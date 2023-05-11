@@ -1,0 +1,98 @@
+---
+title: "STA 9750 Project - Tenzing Wangdu - Soccer: Best Goal Scorer Prediction"
+output: word_document
+---
+
+
+# 1. Introduction
+
+This report is a detailed assessment on the variables that are needed to predict the best goal scorer/player in football/soccer. In order to predict the best goal scorer in football, we will look at each players' goals per match and compare it with all the other players across all the teams in the league. 
+The data set i used is from Kaggle and is a league data set from the English Premier League season of 2015-2016. I tried to get the latest data, but failed to do so. Nonetheless, it is still a very good data set with numerical variables and also includes all the players from that season with numerous records about their individual qualities and attributes. 
+
+```{r}
+#reading the dataset
+library(regclass)
+library(ggplot2)
+library(corrplot)
+data <- read.csv("pl_15-16.csv")
+data[,1:5]
+```
+
+
+
+# 2.Data Cleaning
+Now that we've read the data, we will clean the data set by filtering the variables we don't need to predict the goals, per match. 
+In football, the best goal scorers are usually the players that play in a forward position. Hence, we eliminate or drop the other positions(including: Goalkeeper, Defender, Midfielder). In this case we create a subset with only the players in the forward position. 
+Next, we drop the variables or features that do not have an affect on the goals per match variable. I have been playing football ever since i was a kid and thankfully i can add my knowledge to this report by removing the variables that don't have an affect on goals per match. 
+
+```{r} 
+#Cleaning the dataset for Forwards
+df <- subset(data, Position!="Defender" & Position!="Goalkeeper" & Position!="Midfielder")
+df[1:5,]
+```
+```{r}
+drop <- c("Clean.sheets", "Goals.conceded", "Tackles", "Tackle.success", "Last.man.tackles", "Blocked.shots", "Interceptions", "Clearances", "Headed.Clearance", "Clearances.off line", "Successful.50.50s", "Errors.leading.to.goal", "Tackle.success.%", "Clearances.off.line", "Recoveries", "Own.goals", "Duels.won", "Duels.lost", "Aerial.battles.lost", "Passes", "Crosses", "Accurate.long.balls", "Through.balls", "Yellow.cards", "Red.cards", "Fouls", "Freekicks.scored", "Position", "Passes.per.match", "Headed.goals", "Penalties.scored", "Big.chances.created", "Assists", "Aerial.battles.won", "Big.chances.missed", "Offsides", "Goals", "Name")
+df = df[,!(names(df) %in% drop)]
+df[1:5,]
+```
+
+
+Now, to confirm that i only left the variables that helps in predicting the goals per match, I deduced a correlation matrix, which showls they are correlated with each other.
+```{r}
+#correlation matrix
+cm <- cor(df)
+corrplot(cm, type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45)
+```
+# 3. Association Analysis
+For the association analysis, since we're predicting the goals per match variable, it will be our y variable. Therefore, the other remaining variables will be our x variables. 
+```{r}
+#Association analysis where Goals per match is my y variable and Appearances is my x variable
+associate(Goals.per.match~Appearances,data= df, seed=2022, permutations = 200)
+```
+We can see the results and say that the association between Goals per match and Appearances is statistically significant because the p-value is less than 0.05. Therefore appearance (or more games played) is a major factor in predicting the goals per match. the graph also shows that when a player has a higher number of appearances it tends to be that the player has the chance of getting a higher goals per match. 
+```{r}
+#Association analysis where Goals per match is my y variable and Shots.on.target is my x variable
+associate(Goals.per.match~Shots.on.target,data= df, seed=2022)
+```
+From the results we can say this association between Goals per match and shots on target is statistically significant because the p-value is less than 0.05. Also from the scatter plot we can see a rise in the goals per match when there is a rise in the shots on target. Therefore when there is an increase in shots on target, the goals per match is likely to increase. 
+
+```{r}
+#Association analysis where Goals per match is my y variable and Shooting accuracy is my x variable
+associate(Goals.per.match~Shooting.accuracy..,data= df, seed=2022)
+```
+```{r}
+#Association analysis where Goals per match is my y variable and Goals with right foot is my x variable
+associate(Goals.per.match~Goals.with.right.foot,data= df, seed=2022)
+```
+```{r}
+#Code to cehck auto-correlation between variables before carrying out the simple linear regression model
+acf(df, type = "correlation")
+```
+# Simple Linear Regression
+The first regression model will be checking the relationship between Goals per match and Appearances.
+```{r}
+#Simple Linear Regression
+model <- lm(Goals.per.match ~ Appearances, data = df)
+model
+ggplot(df, aes(Appearances, Goals.per.match)) +
+  geom_point() +
+  stat_smooth(method = lm)
+summary(model)
+```
+
+# We can say that the equation is as follows: 
+# Goals per match = 0.004264 + 0.008671*Appearances
+
+The next regression model will be checking the relationship between Goals per match and Shots on target.
+```{r}
+model <- lm(Goals.per.match ~ Shots.on.target, data = df)
+model
+ggplot(df, aes(Shots.on.target, Goals.per.match)) +
+  geom_point() +
+  stat_smooth(method = lm)
+summary(model)
+```
+
+# We can say that the equation is as follows: 
+# Goals per match = 0.004264 + 0.008671*Shots on target
